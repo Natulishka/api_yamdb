@@ -46,10 +46,15 @@ class User(AbstractUser):
     ]
     email = models.EmailField(
         _('email address'),
+        max_length=254,   # новое
         unique=True)
     password = models.CharField(
         _('password'),
         max_length=128,
+        blank=True)
+    first_name = models.CharField(
+        _('first name'),
+        max_length=150,   # новое
         blank=True)
     bio = models.TextField(
         'Биография',
