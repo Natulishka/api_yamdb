@@ -1,26 +1,31 @@
 from rest_framework import serializers
+from rest_framework.validators import UniqueTogetherValidator
 
-from reviews.models import Reviews, Comments
+from reviews.models import Comments, Reviews
 
 
 class ReviewsSerializer(serializers.ModelSerializer):
-    score = serializers.SerializerMethodField()
+    author = serializers.SlugRelatedField(
+        read_only=True, slug_field='username'
+    )
 
     class Meta:
         model = Reviews
-        fields = ('titles', 'text', 'author', 'score', 'pub_date',)
+        fields = '__all__'
         read_only_fields = ('titles',)
-
-    # def get_score(self, obj):
-    #     obj_score = []
-
-    #     for obj_model in Reviews.objects.filter(author=1):
-    #         obj_score.append(obj_model.score)
-
-    #     return sum(obj_score) // len(obj_score)
+        validators = [
+            UniqueTogetherValidator(
+                queryset=Reviews.objects.all(),
+                fields=('titles', 'author'),
+                message='Вы уже оставляли отзыв на это произведение!'
+            )
+        ]
 
 
 class CommentsSerializer(serializers.ModelSerializer):
+    author = serializers.SlugRelatedField(
+        read_only=True, slug_field='username'
+    )
 
     class Meta:
         model = Comments
