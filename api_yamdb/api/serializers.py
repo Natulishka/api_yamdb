@@ -14,3 +14,11 @@ class UserSerializer(serializers.ModelSerializer):
         fields = ('username', 'email', 'first_name',
                   'last_name', 'bio', 'role')
         model = User
+
+
+class MeUserSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        fields = ('username', 'email', 'first_name',
+                  'last_name', 'bio')
+        model = User
