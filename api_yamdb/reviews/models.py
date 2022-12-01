@@ -1,8 +1,30 @@
 from django.contrib.auth import get_user_model
-from django.core.validators import MaxValueValidator, MinValueValidator
+from django.core.validators import MaxValueValidator, MinValueValidator, MinLengthValidator, MaxLengthValidator
 from django.db import models
 
 User = get_user_model()
+
+
+class Categories(models.Model):
+    name = models.CharField(max_length=256)
+    slug = models.SlugField(max_length=50, unique=True)
+
+
+class Genres(models.Model):
+    name = models.CharField(max_length=256)
+    slug = models.SlugField(max_length=50, unique=True)
+
+
+class Titles(models.Model):
+    name = models.CharField(max_length=256)
+    year = models.IntegerField()
+    description = models.TextField(null=True, blank=True)
+    genre = models.ForeignKey(
+        Genres, on_delete=models.SET_NULL, null=True, related_name='titles'
+    )
+    category = models.ForeignKey(
+        Categories, on_delete=models.SET_NULL, null=True, related_name='titles'
+    )
 
 
 class Reviews(models.Model):
@@ -10,9 +32,7 @@ class Reviews(models.Model):
         Titles, on_delete=models.CASCADE, related_name='reviews'
     )
     text = models.TextField()
-    author = models.ForeignKey(
-        User, on_delete=models.CASCADE, related_name='reviews'
-    )
+    author = models.IntegerField()
     score = models.IntegerField(
         validators=[MinValueValidator(1), MaxValueValidator(10)]
     )
