@@ -1,9 +1,11 @@
 from django.contrib.auth import get_user_model
+from django.contrib.auth.base_user import BaseUserManager
 from rest_framework import status
 from rest_framework.response import Response
 
 from .serializers import SignupSerializer
-from .utils import EmailConfirmationCode, generate_alphanum_crypt_string
+from .utils import EmailConfirmationCode
+# from .utils import generate_alphanum_crypt_string
 from .viewsets import CreateViewSet
 
 LEN_CONFIRMATION_CODE = 10
@@ -15,7 +17,9 @@ class SignupViewSet(CreateViewSet):
     serializer_class = SignupSerializer
 
     def create(self, request, *args, **kwargs):
-        confirmation_code = generate_alphanum_crypt_string(
+        # confirmation_code = generate_alphanum_crypt_string(
+        #     LEN_CONFIRMATION_CODE)
+        confirmation_code = BaseUserManager().make_random_password(
             LEN_CONFIRMATION_CODE)
         username = request.data['username']
         email = request.data['email']

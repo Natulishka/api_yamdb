@@ -8,6 +8,8 @@ User = get_user_model()
 
 class SignupSerializer(serializers.ModelSerializer):
 
+    confirmation_code = serializers.CharField(source='password')
+
     class Meta:
         fields = ('username', 'email', 'confirmation_code')
         model = User
