@@ -46,7 +46,7 @@ class User(AbstractUser):
     ]
     email = models.EmailField(
         _('email address'),
-        max_length=254,   # новое
+        max_length=254,
         unique=True)
     password = models.CharField(
         _('password'),
@@ -54,7 +54,7 @@ class User(AbstractUser):
         blank=True)
     first_name = models.CharField(
         _('first name'),
-        max_length=150,   # новое
+        max_length=150,
         blank=True)
     bio = models.TextField(
         'Биография',
@@ -65,9 +65,9 @@ class User(AbstractUser):
         choices=ROLE_CHOICES,
         default=USER,
     )
-    confirmation_code = models.CharField(
-        'Код подтверждения',
-        max_length=20,
-        blank=True,
-    )
+    # confirmation_code = models.CharField(
+    #     'Код подтверждения',
+    #     max_length=20,
+    #     blank=True,
+    # )
     objects = CustomUserManager()
