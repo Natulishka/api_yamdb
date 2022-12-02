@@ -8,19 +8,15 @@ User = get_user_model()
 
 class SignupSerializer(serializers.ModelSerializer):
 
-    confirmation_code = serializers.CharField(source='password')
-
     class Meta:
-        fields = ('username', 'email', 'confirmation_code')
+        fields = ('username', 'email')
         model = User
-        read_only_fields = ('confirmation_code',)
 
     def validate_username(self, value):
-        username = self.context['request'].username
-        if username == 'me':
+        if value == 'me':
             raise serializers.ValidationError('Нельзя использовать в качестве'
                                               ' username строку me!')
-        if not re.fullmatch(r'[\w.@+-]+', username):
+        if not re.fullmatch(r'[\w.@+-]+', value):
             raise serializers.ValidationError('username может содержать только'
                                               ' цифры, буквы или символы .@+-')
         return value
