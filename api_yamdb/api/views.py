@@ -1,13 +1,13 @@
 from django.shortcuts import get_object_or_404
-from rest_framework import viewsets, filters
 from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework import filters, viewsets
 
-from reviews.models import Comments, Reviews, Categories, Genres, Titles
+from reviews.models import Categories, Comments, Genres, Reviews, Titles
 from api.serializers import (
-    CommentsSerializer,
-    ReviewsSerializer,
     CategoriesSerializer,
+    CommentsSerializer,
     GenresSerializer,
+    ReviewsSerializer,
     TitlesSerializer
 )
 
@@ -34,6 +34,16 @@ class TitlesViewSet(viewsets.ModelViewSet):
     filter_backends = (DjangoFilterBackend,)
     filterset_fields = ('name', 'year', 'genre', 'category',)
 
+    def perform_create(self, serializer):
+        serializer.save(
+            category=get_object_or_404(
+                Categories, slug=self.request.data['category']
+            )
+        )
+
+    def perform_update(self, serializer):
+        return self.perform_create(self, serializer)
+
 
 class ReviewsViewSet(viewsets.ModelViewSet):
     queryset = Reviews.objects.all()
@@ -41,6 +51,7 @@ class ReviewsViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(
+            author=self.request.user,
             titles=get_object_or_404(Titles, pk=self.kwargs.get('title_id'))
         )
 

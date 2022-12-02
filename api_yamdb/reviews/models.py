@@ -1,5 +1,5 @@
 from django.contrib.auth import get_user_model
-from django.core.validators import MaxValueValidator, MinValueValidator, MinLengthValidator, MaxLengthValidator
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 
 User = get_user_model()
@@ -32,7 +32,9 @@ class Reviews(models.Model):
         Titles, on_delete=models.CASCADE, related_name='reviews'
     )
     text = models.TextField()
-    author = models.IntegerField()
+    author = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name='reviews'
+    )
     score = models.IntegerField(
         validators=[MinValueValidator(1), MaxValueValidator(10)]
     )
