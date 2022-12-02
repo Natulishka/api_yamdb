@@ -35,14 +35,17 @@ class TitlesViewSet(viewsets.ModelViewSet):
     filterset_fields = ('name', 'year', 'genre', 'category',)
 
     def perform_create(self, serializer):
+        list_genre = []
+        for obj_genre in self.request.data['genre']:
+            list_genre.append(get_object_or_404(Genres, slug=obj_genre))
         serializer.save(
+            genre=list_genre,
             category=get_object_or_404(
                 Categories, slug=self.request.data['category']
             )
         )
 
-    def perform_update(self, serializer):
-        return self.perform_create(self, serializer)
+    perform_update = perform_create
 
 
 class ReviewsViewSet(viewsets.ModelViewSet):

@@ -1,0 +1,40 @@
+### titles
+PATCH http://127.0.0.1:8000/api/v1/titles/3/
+Content-Type: application/json
+
+{
+    "name": "test_name_titles",
+    "year": 2000,
+    "genre": ["test_slug_genres2"],
+    "category": "test_slug_categories"
+}
+
+
+### Categories
+POST http://127.0.0.1:8000/api/v1/categories/
+Content-Type: application/json
+
+{
+    "name": "test_name_categories",
+    "slug": "test_slug_categories"
+}
+
+
+### Genres
+POST http://127.0.0.1:8000/api/v1/genres/
+Content-Type: application/json
+
+{
+    "name": "test_name_genres2",
+    "slug": "test_slug_genres2"
+}
+
+### reviews
+GET http://127.0.0.1:8000/api/v1/titles/3/reviews/
+Content-Type: application/json
+
+{
+    "text": "test_test_reviews",
+    "author": 1,
+    "score": 5
+}

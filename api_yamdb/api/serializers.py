@@ -1,6 +1,8 @@
 from rest_framework import serializers
 # from rest_framework.validators import UniqueTogetherValidator
 
+from datetime import datetime
+
 from reviews.models import Categories, Comments, Genres, Reviews, Titles
 
 
@@ -57,6 +59,15 @@ class TitlesSerializer(serializers.ModelSerializer):
             return sum(obj_score) // len(obj_score)
         except Exception:
             return 0
+
+    def validate_year(self, value):
+        if len(str(value)) < 4 and len(str(value)) > 4:
+            raise serializers.ValidationError('Неверный формат года!')
+
+        if not (datetime.today().year >= value):
+            raise serializers.ValidationError('Неверно указан год!')
+
+        return value
 
 
 class ReviewsSerializer(serializers.ModelSerializer):
