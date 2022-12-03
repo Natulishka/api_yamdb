@@ -11,6 +11,7 @@ api_v1_router.register(
 
 
 urlpatterns = [
-    path('v1/auth/signup/', MeUserViewSet.as_view()),
+    path('v1/users/me/', MeUserViewSet.as_view({'get': 'retrieve',
+                                                'path': 'update'})),
     path('v1/', include(api_v1_router.urls)),
 ]
