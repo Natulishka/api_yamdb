@@ -1,11 +1,5 @@
-import re
-
-# from django.contrib.auth import authenticate, get_user_model
 from django.contrib.auth import get_user_model
-# from rest_framework import exceptions
 from rest_framework import serializers
-from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
-# from rest_framework_simplejwt.settings import api_settings
 from reviews.models import Categories, Comments, Genres, Reviews, Titles
 
 # from rest_framework.validators import UniqueTogetherValidator
@@ -16,6 +10,8 @@ User = get_user_model()
 
 class SignupSerializer(serializers.ModelSerializer):
 
+    username = serializers.RegexField(regex=r'^[\w.@+-]+$')
+
     class Meta:
         fields = ('username', 'email')
         model = User
@@ -24,9 +20,6 @@ class SignupSerializer(serializers.ModelSerializer):
         if value == 'me':
             raise serializers.ValidationError('Нельзя использовать в качестве'
                                               ' username строку me!')
-        if not re.fullmatch(r'[\w.@+-]+', value):
-            raise serializers.ValidationError('username может содержать только'
-                                              ' цифры, буквы или символы .@+-')
         return value
 
 
@@ -114,40 +107,6 @@ class CommentsSerializer(serializers.ModelSerializer):
         read_only_fields = ('reviews',)
 
 
-class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
-
-    password = serializers.HiddenField(default=1)
-
-    class Meta:
-        model = User
-        fields = ('user', 'password', 'confirmation_code')
-
-    # confirmation_code = serializers.CharField(source='password')
-
-#     # def __init__(self, *args, **kwargs):
-#     #     # Вызываем конструктор класса-родителя.
-#     #     print("проверка2")
-#     #     print(self.__dict__)
-#     #     super().__init__(self, *args, **kwargs)
-#     #     # Передаём значение параметра в новое свойство.
-
-#     # def validate(self, attrs):
-#     #     print("проверка3")
-#     #     authenticate_kwargs = {
-#     #         self.username_field: attrs[self.username_field],
-#     #         "confirmation_code": attrs["confirmation_code"],
-#     #     }
-#     #     try:
-#     #         authenticate_kwargs["request"] = self.context["request"]
-#     #     except KeyError:
-#     #         pass
-
-#     #     self.user = authenticate(**authenticate_kwargs)
-
-#     #     if not api_settings.USER_AUTHENTICATION_RULE(self.user):
-#     #         raise exceptions.AuthenticationFailed(
-#     #             self.error_messages["no_active_account"],
-#     #             "no_active_account",
-#     #         )
-
-#     #     return {}
+class TokenSerializer(serializers.Serializer):
+    username = serializers.CharField(max_length=150)
+    confirmation_code = serializers.CharField()

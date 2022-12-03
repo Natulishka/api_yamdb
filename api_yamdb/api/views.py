@@ -1,17 +1,18 @@
 from api.serializers import (CategoriesSerializer, CommentsSerializer,
-                             GenresSerializer, MyTokenObtainPairSerializer,
-                             ReviewsSerializer, TitlesSerializer)
+                             GenresSerializer, ReviewsSerializer,
+                             TitlesSerializer, TokenSerializer)
 from django.contrib.auth import get_user_model
-# from django.contrib.auth.base_user import BaseUserManager
+from django.contrib.auth.tokens import default_token_generator
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters, status, viewsets
 from rest_framework.response import Response
-from rest_framework_simplejwt.views import TokenObtainPairView
+from rest_framework_simplejwt.tokens import AccessToken
 from reviews.models import Categories, Comments, Genres, Reviews, Titles
 
 from .serializers import SignupSerializer
-from .utils import EmailConfirmationCode, generate_alphanum_crypt_string
+from .utils import email_confirmation_code
+# from .utils import generate_alphanum_crypt_string
 from .viewsets import CreateViewSet
 
 LEN_CONFIRMATION_CODE = 20
@@ -88,31 +89,45 @@ class SignupViewSet(CreateViewSet):
     serializer_class = SignupSerializer
 
     def create(self, request, *args, **kwargs):
-        confirmation_code = generate_alphanum_crypt_string(
-            LEN_CONFIRMATION_CODE)
-        # confirmation_code = BaseUserManager().make_random_password(
-        #     LEN_CONFIRMATION_CODE)
         serializer = self.get_serializer(data=request.data)
+        try:
+            username = request.data['username']
+            email = request.data['email']
+        except KeyError:
+            serializer.is_valid(raise_exception=True)
+        if not User.objects.filter(username=username,
+                                   email=email).exists():
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+            self.perform_create(serializer)
+        user = get_object_or_404(User, username=username)
+        serializer = self.get_serializer(user, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
-        username = request.data['username']
-        email = request.data['email']
-        if User.objects.filter(username=username,
-                               email=email).exists():
-            instance = get_object_or_404(User, username=username)
-            serializer = self.get_serializer(instance,
-                                             data=request.data,
-                                             partial=True)
-        serializer.save(pconfirmation_code=confirmation_code)
-        self.perform_create(serializer)
+        confirmation_code = default_token_generator.make_token(user)
+        email_confirmation_code(confirmation_code, username, email)
         headers = self.get_success_headers(serializer.data)
-        EmailConfirmationCode(confirmation_code, username, email)
         return Response(serializer.data,
                         status=status.HTTP_200_OK,
                         headers=headers)
 
 
-class MyTokenObtainPairView(TokenObtainPairView):
-    serializer_class = MyTokenObtainPairSerializer
+class TokenViewSet(CreateViewSet):
+    queryset = User.objects.all()
+    serializer_class = TokenSerializer
 
-#     def get_serializer(self, *args, **kwargs):
-#         return super().get_serializer(self, *args, **kwargs)
+    def get_tokens_for_user(self, user):
+        token = AccessToken.for_user(user)
+        return {
+            'token': str(token)
+        }
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        username = request.data['username']
+        confirmation_code = request.data['confirmation_code']
+        user = get_object_or_404(User, username=username)
+        if not default_token_generator.check_token(user, confirmation_code):
+            Response(status=status.HTTP_400_BAD_REQUEST)
+        token = self.get_tokens_for_user(user)
+        return Response(token, status=status.HTTP_200_OK)

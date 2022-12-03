@@ -3,7 +3,7 @@ from api.views import (CategoriesViewSet, CommentsViewSet, GenresViewSet,
 from django.urls import include, path
 from rest_framework.routers import SimpleRouter
 
-from .views import MyTokenObtainPairView, SignupViewSet
+from .views import SignupViewSet, TokenViewSet
 
 # from rest_framework_simplejwt.views import TokenObtainPairView
 
@@ -28,7 +28,7 @@ api_v1_router.register(
 
 urlpatterns = [
     path('v1/auth/signup/', SignupViewSet.as_view({'post': 'create'})),
-    path('v1/auth/token/', MyTokenObtainPairView.as_view(),
+    path('v1/auth/token/', TokenViewSet.as_view({'post': 'create'}),
          name='token_obtain_pair'),
     path('v1/', include(api_v1_router.urls)),
 ]
