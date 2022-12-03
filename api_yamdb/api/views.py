@@ -1,26 +1,18 @@
+from api.serializers import (CategoriesSerializer, CommentsSerializer,
+                             GenresSerializer, MyTokenObtainPairSerializer,
+                             ReviewsSerializer, TitlesSerializer)
 from django.contrib.auth import get_user_model
-from django.contrib.auth.base_user import BaseUserManager
-from django.shortcuts import get_object_or_404
-from rest_framework import status
-from rest_framework.response import Response
-
-from .serializers import SignupSerializer
-from .utils import EmailConfirmationCode
-# from .utils import generate_alphanum_crypt_string
-from .viewsets import CreateViewSet
+# from django.contrib.auth.base_user import BaseUserManager
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import filters, viewsets
-
+from rest_framework import filters, status, viewsets
+from rest_framework.response import Response
+from rest_framework_simplejwt.views import TokenObtainPairView
 from reviews.models import Categories, Comments, Genres, Reviews, Titles
-from api.serializers import (
-    CategoriesSerializer,
-    CommentsSerializer,
-    GenresSerializer,
-    ReviewsSerializer,
-    TitlesSerializer
-)
 
+from .serializers import SignupSerializer
+from .utils import EmailConfirmationCode, generate_alphanum_crypt_string
+from .viewsets import CreateViewSet
 
 LEN_CONFIRMATION_CODE = 20
 User = get_user_model()
@@ -96,10 +88,10 @@ class SignupViewSet(CreateViewSet):
     serializer_class = SignupSerializer
 
     def create(self, request, *args, **kwargs):
-        # confirmation_code = generate_alphanum_crypt_string(
-        #     LEN_CONFIRMATION_CODE)
-        confirmation_code = BaseUserManager().make_random_password(
+        confirmation_code = generate_alphanum_crypt_string(
             LEN_CONFIRMATION_CODE)
+        # confirmation_code = BaseUserManager().make_random_password(
+        #     LEN_CONFIRMATION_CODE)
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         username = request.data['username']
@@ -110,10 +102,17 @@ class SignupViewSet(CreateViewSet):
             serializer = self.get_serializer(instance,
                                              data=request.data,
                                              partial=True)
-        serializer.save(password=confirmation_code)
+        serializer.save(pconfirmation_code=confirmation_code)
         self.perform_create(serializer)
         headers = self.get_success_headers(serializer.data)
         EmailConfirmationCode(confirmation_code, username, email)
         return Response(serializer.data,
                         status=status.HTTP_200_OK,
                         headers=headers)
+
+
+class MyTokenObtainPairView(TokenObtainPairView):
+    serializer_class = MyTokenObtainPairSerializer
+
+#     def get_serializer(self, *args, **kwargs):
+#         return super().get_serializer(self, *args, **kwargs)

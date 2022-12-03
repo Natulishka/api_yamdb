@@ -63,9 +63,9 @@ class User(AbstractUser):
         choices=ROLE_CHOICES,
         default='user',
     )
-    # confirmation_code = models.CharField(
-    #     'Код подтверждения',
-    #     max_length=20,
-    #     blank=True,
-    # )
+    confirmation_code = models.CharField(
+        'Код подтверждения',
+        max_length=20,
+        blank=True,
+    )
     objects = CustomUserManager()
