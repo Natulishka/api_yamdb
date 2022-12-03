@@ -1,5 +1,6 @@
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
+from django.core.exceptions import ValidationError
 from rest_framework import filters, viewsets
 
 from reviews.models import Categories, Comments, Genres, Reviews, Titles
@@ -36,6 +37,7 @@ class TitlesViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         list_genre = []
+
         for obj_genre in self.request.data['genre']:
             list_genre.append(get_object_or_404(Genres, slug=obj_genre))
         serializer.save(

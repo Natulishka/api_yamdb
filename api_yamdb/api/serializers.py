@@ -1,5 +1,4 @@
 from rest_framework import serializers
-# from rest_framework.validators import UniqueTogetherValidator
 
 from datetime import datetime
 
@@ -61,7 +60,7 @@ class TitlesSerializer(serializers.ModelSerializer):
             return 0
 
     def validate_year(self, value):
-        if len(str(value)) < 4 and len(str(value)) > 4:
+        if len(str(value)) != 4:
             raise serializers.ValidationError('Неверный формат года!')
 
         if not (datetime.today().year >= value):
@@ -78,14 +77,15 @@ class ReviewsSerializer(serializers.ModelSerializer):
     class Meta:
         model = Reviews
         fields = '__all__'
-        read_only_fields = ('titles',)
-        # validators = [
-        #     UniqueTogetherValidator(
-        #         queryset=Reviews.objects.all(),
-        #         fields=('titles', 'author'),
-        #         message='Вы уже оставляли отзыв на это произведение!'
-        #     )
-        # ]
+
+    def validate_titles(self, value):
+        if Reviews.objects.filter(
+            titles=value,
+            author=self._kwargs['data'].get('author')
+        ).exists():
+            raise serializers.ValidationError('Вы уже оставляли отзыв')
+
+        return value
 
 
 class CommentsSerializer(serializers.ModelSerializer):
