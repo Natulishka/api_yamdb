@@ -2,6 +2,12 @@ from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
+ROLE_CHOICES = [
+    ('user', 'Пользователь'),
+    ('moderator', 'Модератор'),
+    ('admin', 'Администратор'),
+]
+
 
 class CustomUserManager(BaseUserManager):
     '''
@@ -36,14 +42,6 @@ class CustomUserManager(BaseUserManager):
 
 
 class User(AbstractUser):
-    USER = 'user'
-    MODERATOR = 'moderator'
-    ADMIN = 'admin'
-    ROLE_CHOICES = [
-        (USER, 'Пользователь'),
-        (MODERATOR, 'Модератор'),
-        (ADMIN, 'Администратор'),
-    ]
     email = models.EmailField(
         _('email address'),
         max_length=254,
@@ -63,7 +61,7 @@ class User(AbstractUser):
     role = models.CharField(
         max_length=9,
         choices=ROLE_CHOICES,
-        default=USER,
+        default='user',
     )
     # confirmation_code = models.CharField(
     #     'Код подтверждения',
