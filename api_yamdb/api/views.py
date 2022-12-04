@@ -10,11 +10,11 @@ from rest_framework_simplejwt.tokens import AccessToken
 from .serializers import (CategoriesSerializer, CommentsSerializer,
                           GenresSerializer, ReviewsSerializer,
                           SignupSerializer, TitlesSerializer, TokenSerializer)
+from .serializers import MeUserSerializer, UserSerializer
 from .utils import email_confirmation_code
-from .viewsets import CreateViewSet
+from .viewsets import CreateViewSet, RetrieveUpdateViewSet
 from reviews.models import Categories, Comments, Genres, Reviews, Titles
 
-LEN_CONFIRMATION_CODE = 20
 User = get_user_model()
 
 
@@ -135,3 +135,15 @@ class TokenViewSet(CreateViewSet):
                             status=status.HTTP_400_BAD_REQUEST)
         token = self.get_tokens_for_user(user)
         return Response(token, status=status.HTTP_200_OK)
+
+
+class UserViewSet(viewsets.ModelViewSet):
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+    lookup_field = 'username'
+    search_fields = ('name',)
+
+
+class MeUserViewSet(RetrieveUpdateViewSet):
+    queryset = User.objects.all()
+    serializer_class = MeUserSerializer
