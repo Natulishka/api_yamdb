@@ -1,8 +1,28 @@
+from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
 from datetime import datetime
 
 from reviews.models import Categories, Comments, Genres, Reviews, Titles
+
+
+
+User = get_user_model()
+
+
+class SignupSerializer(serializers.ModelSerializer):
+
+    # username = serializers.RegexField(regex=r'^[\w.@+-]+$')
+
+    class Meta:
+        fields = ('username', 'email')
+        model = User
+
+    def validate_username(self, value):
+        if value == 'me':
+            raise serializers.ValidationError('Нельзя использовать в качестве'
+                                              ' username строку me!')
+        return value
 
 
 class GenreSerializer(serializers.ModelSerializer):
@@ -97,3 +117,8 @@ class CommentsSerializer(serializers.ModelSerializer):
         model = Comments
         fields = '__all__'
         read_only_fields = ('reviews',)
+
+
+class TokenSerializer(serializers.Serializer):
+    username = serializers.CharField(max_length=150)
+    confirmation_code = serializers.CharField()

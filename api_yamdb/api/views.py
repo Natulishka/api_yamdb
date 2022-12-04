@@ -1,16 +1,21 @@
+from django.contrib.auth import get_user_model
+from django.contrib.auth.tokens import default_token_generator
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from django.core.exceptions import ValidationError
-from rest_framework import filters, viewsets
+from rest_framework import filters, status, viewsets
+from rest_framework.response import Response
+from rest_framework_simplejwt.tokens import AccessToken
 
+from .serializers import (CategoriesSerializer, CommentsSerializer,
+                          GenresSerializer, ReviewsSerializer,
+                          SignupSerializer, TitlesSerializer, TokenSerializer)
+from .utils import email_confirmation_code
+from .viewsets import CreateViewSet
 from reviews.models import Categories, Comments, Genres, Reviews, Titles
-from api.serializers import (
-    CategoriesSerializer,
-    CommentsSerializer,
-    GenresSerializer,
-    ReviewsSerializer,
-    TitlesSerializer
-)
+
+LEN_CONFIRMATION_CODE = 20
+User = get_user_model()
 
 
 class CategoriesViewSet(viewsets.ModelViewSet):
@@ -80,3 +85,53 @@ class CommentsViewSet(viewsets.ModelViewSet):
             author=self.request.user,
             reviews=self.request_reviews()
         )
+
+
+class SignupViewSet(CreateViewSet):
+    queryset = User.objects.all()
+    serializer_class = SignupSerializer
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        try:
+            username = request.data['username']
+            email = request.data['email']
+        except KeyError:
+            serializer.is_valid(raise_exception=True)
+        if not User.objects.filter(username=username,
+                                   email=email).exists():
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+            self.perform_create(serializer)
+        user = get_object_or_404(User, username=username)
+        serializer = self.get_serializer(user, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        confirmation_code = default_token_generator.make_token(user)
+        email_confirmation_code(confirmation_code, username, email)
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data,
+                        status=status.HTTP_200_OK,
+                        headers=headers)
+
+
+class TokenViewSet(CreateViewSet):
+    queryset = User.objects.all()
+    serializer_class = TokenSerializer
+
+    def get_tokens_for_user(self, user):
+        token = AccessToken.for_user(user)
+        return {
+            'token': str(token)
+        }
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        username = request.data['username']
+        confirmation_code = request.data['confirmation_code']
+        user = get_object_or_404(User, username=username)
+        if not default_token_generator.check_token(user, confirmation_code):
+            return Response('Uncorrect value confirmation_code',
+                            status=status.HTTP_400_BAD_REQUEST)
+        token = self.get_tokens_for_user(user)
+        return Response(token, status=status.HTTP_200_OK)
