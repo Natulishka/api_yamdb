@@ -1,16 +1,16 @@
-import re
-
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
-# from rest_framework.validators import UniqueTogetherValidator
-
 from reviews.models import Categories, Comments, Genres, Reviews, Titles
+
+# from rest_framework.validators import UniqueTogetherValidator
 
 
 User = get_user_model()
 
 
 class SignupSerializer(serializers.ModelSerializer):
+
+    # username = serializers.RegexField(regex=r'^[\w.@+-]+$')
 
     class Meta:
         fields = ('username', 'email')
@@ -20,9 +20,6 @@ class SignupSerializer(serializers.ModelSerializer):
         if value == 'me':
             raise serializers.ValidationError('Нельзя использовать в качестве'
                                               ' username строку me!')
-        if not re.fullmatch(r'[\w.@+-]+', value):
-            raise serializers.ValidationError('username может содержать только'
-                                              ' цифры, буквы или символы .@+-')
         return value
 
 
@@ -109,3 +106,7 @@ class CommentsSerializer(serializers.ModelSerializer):
         fields = '__all__'
         read_only_fields = ('reviews',)
 
+
+class TokenSerializer(serializers.Serializer):
+    username = serializers.CharField(max_length=150)
+    confirmation_code = serializers.CharField()
