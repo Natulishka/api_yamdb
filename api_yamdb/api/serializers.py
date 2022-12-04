@@ -10,7 +10,7 @@ User = get_user_model()
 
 class SignupSerializer(serializers.ModelSerializer):
 
-    username = serializers.RegexField(regex=r'^[\w.@+-]+$')
+    # username = serializers.RegexField(regex=r'^[\w.@+-]+$')
 
     class Meta:
         fields = ('username', 'email')

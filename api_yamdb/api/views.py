@@ -128,6 +128,7 @@ class TokenViewSet(CreateViewSet):
         confirmation_code = request.data['confirmation_code']
         user = get_object_or_404(User, username=username)
         if not default_token_generator.check_token(user, confirmation_code):
-            Response(status=status.HTTP_400_BAD_REQUEST)
+            return Response('Uncorrect value confirmation_code',
+                            status=status.HTTP_400_BAD_REQUEST)
         token = self.get_tokens_for_user(user)
         return Response(token, status=status.HTTP_200_OK)
