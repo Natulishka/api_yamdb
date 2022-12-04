@@ -1,9 +1,8 @@
-from api.views import (CategoriesViewSet, CommentsViewSet, GenresViewSet,
-                       ReviewsViewSet, TitlesViewSet)
 from django.urls import include, path
 from rest_framework.routers import SimpleRouter
 
-from .views import SignupViewSet, TokenViewSet
+from .views import (CategoriesViewSet, CommentsViewSet, GenresViewSet,
+                    ReviewsViewSet, SignupViewSet, TitlesViewSet, TokenViewSet)
 
 # from rest_framework_simplejwt.views import TokenObtainPairView
 

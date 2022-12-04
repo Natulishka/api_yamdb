@@ -1,6 +1,3 @@
-from api.serializers import (CategoriesSerializer, CommentsSerializer,
-                             GenresSerializer, ReviewsSerializer,
-                             TitlesSerializer, TokenSerializer)
 from django.contrib.auth import get_user_model
 from django.contrib.auth.tokens import default_token_generator
 from django.shortcuts import get_object_or_404
@@ -8,12 +5,13 @@ from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters, status, viewsets
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import AccessToken
-from reviews.models import Categories, Comments, Genres, Reviews, Titles
 
-from .serializers import SignupSerializer
+from .serializers import (CategoriesSerializer, CommentsSerializer,
+                          GenresSerializer, ReviewsSerializer,
+                          SignupSerializer, TitlesSerializer, TokenSerializer)
 from .utils import email_confirmation_code
-# from .utils import generate_alphanum_crypt_string
 from .viewsets import CreateViewSet
+from reviews.models import Categories, Comments, Genres, Reviews, Titles
 
 LEN_CONFIRMATION_CODE = 20
 User = get_user_model()
