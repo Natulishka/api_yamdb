@@ -6,5 +6,12 @@ class RetrieveUpdateViewSet(mixins.RetrieveModelMixin,
                             viewsets.GenericViewSet):
     """
     Вьюсет, который обеспечивает действия `retrieve` and 'update'.
+    pass
+
+
+class CreateViewSet(mixins.CreateModelMixin,
+                    viewsets.GenericViewSet):
+    """
+    Вьюсет, который обеспечивает действия `create`.
     """
     pass
