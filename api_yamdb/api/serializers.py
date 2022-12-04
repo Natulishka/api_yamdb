@@ -1,13 +1,12 @@
+from datetime import datetime
+
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
-
-from datetime import datetime
 
 from reviews.models import Categories, Comments, Genres, Reviews, Titles
 from users.models import ROLE_CHOICES
 
 User = get_user_model()
-
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -23,8 +22,10 @@ class MeUserSerializer(serializers.ModelSerializer):
 
     class Meta:
         fields = ('username', 'email', 'first_name',
-                  'last_name', 'bio')
+                  'last_name', 'bio', 'role')
         model = User
+        read_only_fields = ('role', )
+
 
 class SignupSerializer(serializers.ModelSerializer):
 
@@ -138,4 +139,3 @@ class CommentsSerializer(serializers.ModelSerializer):
 class TokenSerializer(serializers.Serializer):
     username = serializers.CharField(max_length=150)
     confirmation_code = serializers.CharField()
-

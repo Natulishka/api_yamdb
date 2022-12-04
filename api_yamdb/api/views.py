@@ -2,15 +2,16 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.tokens import default_token_generator
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
-from django.core.exceptions import ValidationError
 from rest_framework import filters, status, viewsets
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import AccessToken
 
+from .permissions import IsAdminOrSuperuser, IsAnyRole, IsModerator, IsUser
 from .serializers import (CategoriesSerializer, CommentsSerializer,
-                          GenresSerializer, ReviewsSerializer,
-                          SignupSerializer, TitlesSerializer, TokenSerializer)
-from .serializers import MeUserSerializer, UserSerializer
+                          GenresSerializer, MeUserSerializer,
+                          ReviewsSerializer, SignupSerializer,
+                          TitlesSerializer, TokenSerializer, UserSerializer)
 from .utils import email_confirmation_code
 from .viewsets import CreateViewSet, RetrieveUpdateViewSet
 from reviews.models import Categories, Comments, Genres, Reviews, Titles
@@ -142,8 +143,15 @@ class UserViewSet(viewsets.ModelViewSet):
     serializer_class = UserSerializer
     lookup_field = 'username'
     search_fields = ('name',)
+    permission_classes = (IsAuthenticated, IsAdminOrSuperuser)
 
 
 class MeUserViewSet(RetrieveUpdateViewSet):
     queryset = User.objects.all()
     serializer_class = MeUserSerializer
+    permission_classes = (IsAuthenticated, )
+
+    def get_object(self):
+        obj = self.request.user
+        self.check_object_permissions(self.request, obj)
+        return obj
