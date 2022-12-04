@@ -2,6 +2,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.tokens import default_token_generator
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
+from django.core.exceptions import ValidationError
 from rest_framework import filters, status, viewsets
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import AccessToken
@@ -40,14 +41,18 @@ class TitlesViewSet(viewsets.ModelViewSet):
     filterset_fields = ('name', 'year', 'genre', 'category',)
 
     def perform_create(self, serializer):
+        list_genre = []
+
+        for obj_genre in self.request.data['genre']:
+            list_genre.append(get_object_or_404(Genres, slug=obj_genre))
         serializer.save(
+            genre=list_genre,
             category=get_object_or_404(
                 Categories, slug=self.request.data['category']
             )
         )
 
-    def perform_update(self, serializer):
-        return self.perform_create(self, serializer)
+    perform_update = perform_create
 
 
 class ReviewsViewSet(viewsets.ModelViewSet):
