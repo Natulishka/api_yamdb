@@ -7,7 +7,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import AccessToken
 
-from .permissions import IsAdminOrSuperuser
+from .permissions import IsAdminOrSuperuser, IsAnyRole, IsModerator, IsUser
 from .serializers import (CategoriesSerializer, CommentsSerializer,
                           GenresSerializer, MeUserSerializer,
                           ReviewsSerializer, SignupSerializer,
@@ -149,7 +149,7 @@ class UserViewSet(viewsets.ModelViewSet):
 class MeUserViewSet(RetrieveUpdateViewSet):
     queryset = User.objects.all()
     serializer_class = MeUserSerializer
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, )
 
     def get_object(self):
         obj = self.request.user

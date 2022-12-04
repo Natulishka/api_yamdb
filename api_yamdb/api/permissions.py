@@ -41,6 +41,32 @@ class IsModerator(permissions.BasePermission):
         return False
 
 
+class IsUser(permissions.BasePermission):
+    '''
+    Разрешение, что только пользователь может изменять и
+    удалять контент
+    '''
+    message = ('Только пользователь может изменять и'
+               'удалять контент!')
+
+    def has_permission(self, request, view):
+        if request.user.role == 'user':
+            return True
+        return False
+
+
+class IsAnyRole(permissions.BasePermission):
+    '''
+    Разрешение, что любая роль может изменять и
+    удалять контент
+    '''
+
+    def has_permission(self, request, view):
+        if request.user.role:
+            return True
+        return False
+
+
 class IsSafeMethods(permissions.BasePermission):
     '''
     Разрешение безопасных методов
