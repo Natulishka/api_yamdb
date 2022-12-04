@@ -1,10 +1,11 @@
-from api.views import MeUserViewSet, UserViewSet
 from django.urls import include, path
 from rest_framework.routers import SimpleRouter
 
+from api.views import MeUserViewSet, UserViewSet
+
 api_v1_router = SimpleRouter()
 api_v1_router.register(
-    r'users',
+    'users',
     UserViewSet,
     basename='users'
 )
