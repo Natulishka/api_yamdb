@@ -76,3 +76,14 @@ class IsSafeMethods(permissions.BasePermission):
         if request.method in permissions.SAFE_METHODS:
             return True
         return False
+
+
+class IsPostMethod(permissions.BasePermission):
+    '''
+    Разрешение метода post
+    '''
+
+    def has_permission(self, request, view):
+        if request.method == 'POST':
+            return True
+        return False
