@@ -5,37 +5,37 @@ from django.db import models
 User = get_user_model()
 
 
-class Categories(models.Model):
+class Category(models.Model):
     name = models.CharField(max_length=256)
     slug = models.SlugField(max_length=50, unique=True)
 
 
-class Genres(models.Model):
+class Genre(models.Model):
     name = models.CharField(max_length=256)
     slug = models.SlugField(max_length=50, unique=True)
 
 
-class Titles(models.Model):
+class Title(models.Model):
     name = models.CharField(max_length=256)
     year = models.IntegerField()
     description = models.TextField(null=True, blank=True)
-    genre = models.ManyToManyField(Genres, through='GenresTitles')
+    genre = models.ManyToManyField(Genre, through='GenreTitle')
     category = models.ForeignKey(
-        Categories, on_delete=models.SET_NULL, null=True, related_name='titles'
+        Category, on_delete=models.SET_NULL, null=True, related_name='titles'
     )
 
 
-class GenresTitles(models.Model):
-    genre = models.ForeignKey(Genres, on_delete=models.CASCADE)
-    titles = models.ForeignKey(Titles, on_delete=models.CASCADE)
+class GenreTitle(models.Model):
+    genre = models.ForeignKey(Genre, on_delete=models.CASCADE)
+    title = models.ForeignKey(Title, on_delete=models.CASCADE)
 
     def __str__(self):
-        return f'{self.genre} {self.titles}'
+        return f'{self.genre} {self.title}'
 
 
-class Reviews(models.Model):
-    titles = models.ForeignKey(
-        Titles, on_delete=models.CASCADE, related_name='reviews'
+class Review(models.Model):
+    title = models.ForeignKey(
+        Title, on_delete=models.CASCADE, related_name='reviews'
     )
     text = models.TextField()
     author = models.ForeignKey(
@@ -46,10 +46,18 @@ class Reviews(models.Model):
     )
     pub_date = models.DateTimeField(auto_now_add=True)
 
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['title', 'author'],
+                name='unique_title_author'
+            )
+        ]
 
-class Comments(models.Model):
+
+class Comment(models.Model):
     reviews = models.ForeignKey(
-        Reviews, on_delete=models.CASCADE, related_name='comments'
+        Review, on_delete=models.CASCADE, related_name='comments'
     )
     text = models.TextField()
     author = models.ForeignKey(

@@ -10,7 +10,7 @@ from rest_framework import serializers
 
 from .permissions import (IsAdminOrSuperuser,
                           IsAnyRole, IsModerator,
-                          IsUser, IsSafeMethods)
+                          IsUser, IsSafeMethods, IsAuthorOrReadOnly)
 from .serializers import (CategoriesSerializer, CommentsSerializer,
                           GenresSerializer, MeUserSerializer,
                           ReviewsSerializer, SignupSerializer,
@@ -18,13 +18,13 @@ from .serializers import (CategoriesSerializer, CommentsSerializer,
 from .utils import email_confirmation_code
 from .viewsets import (CreateViewSet, RetrieveUpdateViewSet,
                        CreateListDeleteViewSet)
-from reviews.models import Categories, Comments, Genres, Reviews, Titles
+from reviews.models import Category, Comment, Genre, Review, Title
 
 User = get_user_model()
 
 
 class CategoriesViewSet(CreateListDeleteViewSet):
-    queryset = Categories.objects.all()
+    queryset = Category.objects.all()
     serializer_class = CategoriesSerializer
     permission_classes = (
         IsSafeMethods | (IsAuthenticated & IsAdminOrSuperuser),
@@ -35,7 +35,7 @@ class CategoriesViewSet(CreateListDeleteViewSet):
 
 
 class GenresViewSet(CreateListDeleteViewSet):
-    queryset = Genres.objects.all()
+    queryset = Genre.objects.all()
     serializer_class = GenresSerializer
     permission_classes = (
         IsSafeMethods | (IsAuthenticated & IsAdminOrSuperuser),
@@ -46,7 +46,7 @@ class GenresViewSet(CreateListDeleteViewSet):
 
 
 class TitlesViewSet(viewsets.ModelViewSet):
-    queryset = Titles.objects.all()
+    queryset = Title.objects.all()
     serializer_class = TitlesSerializer
     permission_classes = (
         IsSafeMethods | (IsAuthenticated & IsAdminOrSuperuser),
@@ -58,12 +58,12 @@ class TitlesViewSet(viewsets.ModelViewSet):
         list_genre = []
 
         for obj_genre in self.request.data.getlist('genre'):
-            list_genre.append(get_object_or_404(Genres, slug=obj_genre))
+            list_genre.append(get_object_or_404(Genre, slug=obj_genre))
 
         serializer.save(
             genre=list_genre,
             category=get_object_or_404(
-                Categories, slug=self.request.data['category']
+                Category, slug=self.request.data['category']
             )
         )
 
@@ -71,32 +71,32 @@ class TitlesViewSet(viewsets.ModelViewSet):
 
 
 class ReviewsViewSet(viewsets.ModelViewSet):
-    queryset = Reviews.objects.all()
+    queryset = Review.objects.all()
     serializer_class = ReviewsSerializer
-    permission_classes = (IsSafeMethods | (IsUser | IsAdminOrSuperuser | IsModerator),)
+    permission_classes = (IsSafeMethods | (IsAuthenticated & (IsAuthorOrReadOnly | IsAdminOrSuperuser | IsModerator)),)
 
     def perform_create(self, serializer):
-        if Reviews.objects.filter(
-            titles=get_object_or_404(Titles, pk=self.kwargs.get('title_id')),
+        if Review.objects.filter(
+            title=get_object_or_404(Title, pk=self.kwargs.get('title_id')),
             author=self.request.user
         ).exists():
             raise serializers.ValidationError('Вы уже оставляли отзыв')
 
         serializer.save(
             author=self.request.user,
-            titles=get_object_or_404(Titles, pk=self.kwargs.get('title_id'))
+            title=get_object_or_404(Title, pk=self.kwargs.get('title_id'))
         )
 
 
 class CommentsViewSet(viewsets.ModelViewSet):
-    queryset = Comments.objects.all()
+    queryset = Comment.objects.all()
     serializer_class = CommentsSerializer
     permission_classes = (IsSafeMethods | (IsUser | IsAdminOrSuperuser | IsModerator),)
 
     def request_reviews(self):
         return get_object_or_404(
-            Reviews,
-            titles=self.kwargs.get('title_id'),
+            Review,
+            title=self.kwargs.get('title_id'),
             pk=self.kwargs.get('review_id')
         )
 
