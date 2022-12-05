@@ -1,6 +1,13 @@
 from rest_framework import mixins, viewsets
 
 
+class CreateListDeleteViewSet(mixins.ListModelMixin,
+                              mixins.CreateModelMixin,
+                              mixins.DestroyModelMixin,
+                              viewsets.GenericViewSet):
+    pass
+
+
 class RetrieveUpdateViewSet(mixins.RetrieveModelMixin,
                             mixins.UpdateModelMixin,
                             viewsets.GenericViewSet):
