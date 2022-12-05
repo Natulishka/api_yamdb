@@ -57,14 +57,14 @@ class CategorySerializer(serializers.ModelSerializer):
 class CategoriesSerializer(serializers.ModelSerializer):
     class Meta:
         model = Categories
-        fields = '__all__'
+        fields = ('name', 'slug',)
         lookup_field = 'slug'
 
 
 class GenresSerializer(serializers.ModelSerializer):
     class Meta:
         model = Genres
-        fields = '__all__'
+        fields = ('name', 'slug',)
         lookup_field = 'slug'
 
 
@@ -76,7 +76,6 @@ class TitlesSerializer(serializers.ModelSerializer):
     class Meta:
         model = Titles
         fields = (
-            'id',
             'name',
             'year',
             'description',
@@ -113,7 +112,7 @@ class ReviewsSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Reviews
-        fields = '__all__'
+        fields = ('titles', 'text', 'author', 'score', 'pub_date',)
 
     def validate_titles(self, value):
         if Reviews.objects.filter(
@@ -132,7 +131,7 @@ class CommentsSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Comments
-        fields = '__all__'
+        fields = ('reviews', 'text', 'author', 'pub_date')
         read_only_fields = ('reviews',)
 
 

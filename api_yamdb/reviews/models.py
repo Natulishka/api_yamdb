@@ -38,7 +38,6 @@ class Reviews(models.Model):
         Titles, on_delete=models.CASCADE, related_name='reviews'
     )
     text = models.TextField()
-    author = models.IntegerField()
     author = models.ForeignKey(
         User, on_delete=models.CASCADE, related_name='reviews'
     )
