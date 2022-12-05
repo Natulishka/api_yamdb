@@ -7,8 +7,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import AccessToken
 
-from .permissions import IsAdminOrSuperuser
-# (IsAnyRole, IsModerator, IsUser)
+from .permissions import IsAdminOrSuperuser, IsAnyRole, IsModerator, IsUser, IsSafeMethods
 from .serializers import (CategoriesSerializer, CommentsSerializer,
                           GenresSerializer, MeUserSerializer,
                           ReviewsSerializer, SignupSerializer,
@@ -23,6 +22,7 @@ User = get_user_model()
 class CategoriesViewSet(viewsets.ModelViewSet):
     queryset = Categories.objects.all()
     serializer_class = CategoriesSerializer
+    permission_classes = (IsSafeMethods | (IsAuthenticated & IsAdminOrSuperuser),)
     filter_backends = (filters.SearchFilter,)
     search_fields = ('name',)
     lookup_field = 'slug'
@@ -31,6 +31,7 @@ class CategoriesViewSet(viewsets.ModelViewSet):
 class GenresViewSet(viewsets.ModelViewSet):
     queryset = Genres.objects.all()
     serializer_class = GenresSerializer
+    permission_classes = (IsSafeMethods | (IsAuthenticated & IsAdminOrSuperuser),)
     filter_backends = (filters.SearchFilter,)
     search_fields = ('name',)
     lookup_field = 'slug'
@@ -39,6 +40,7 @@ class GenresViewSet(viewsets.ModelViewSet):
 class TitlesViewSet(viewsets.ModelViewSet):
     queryset = Titles.objects.all()
     serializer_class = TitlesSerializer
+    permission_classes = (IsSafeMethods | (IsAuthenticated & IsAdminOrSuperuser),)
     filter_backends = (DjangoFilterBackend,)
     filterset_fields = ('name', 'year', 'genre', 'category',)
 
@@ -60,6 +62,7 @@ class TitlesViewSet(viewsets.ModelViewSet):
 class ReviewsViewSet(viewsets.ModelViewSet):
     queryset = Reviews.objects.all()
     serializer_class = ReviewsSerializer
+    permission_classes = (IsSafeMethods, IsUser, IsAdminOrSuperuser,)
 
     def perform_create(self, serializer):
         serializer.save(
@@ -71,6 +74,7 @@ class ReviewsViewSet(viewsets.ModelViewSet):
 class CommentsViewSet(viewsets.ModelViewSet):
     queryset = Comments.objects.all()
     serializer_class = CommentsSerializer
+    permission_classes = (IsSafeMethods, IsUser, IsAdminOrSuperuser,)
 
     def request_reviews(self):
         return get_object_or_404(
