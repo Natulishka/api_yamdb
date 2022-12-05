@@ -7,7 +7,8 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import AccessToken
 
-from .permissions import IsAdminOrSuperuser, IsAnyRole, IsModerator, IsUser
+from .permissions import IsAdminOrSuperuser
+# (IsAnyRole, IsModerator, IsUser)
 from .serializers import (CategoriesSerializer, CommentsSerializer,
                           GenresSerializer, MeUserSerializer,
                           ReviewsSerializer, SignupSerializer,
