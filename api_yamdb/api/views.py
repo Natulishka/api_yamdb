@@ -2,22 +2,20 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.tokens import default_token_generator
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import filters, status, viewsets
+from rest_framework import filters, serializers, status, viewsets
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import AccessToken
-from rest_framework import serializers
 
-from .permissions import (IsAdminOrSuperuser,
-                          IsAnyRole, IsModerator,
-                          IsUser, IsSafeMethods, IsAuthorOrReadOnly)
+from .permissions import (IsAdminOrSuperuser, IsAuthor, IsModerator,
+                          IsSafeMethods, IsUser)
 from .serializers import (CategoriesSerializer, CommentsSerializer,
                           GenresSerializer, MeUserSerializer,
                           ReviewsSerializer, SignupSerializer,
                           TitlesSerializer, TokenSerializer, UserSerializer)
 from .utils import email_confirmation_code
-from .viewsets import (CreateViewSet, RetrieveUpdateViewSet,
-                       CreateListDeleteViewSet)
+from .viewsets import (CreateListDeleteViewSet, CreateViewSet,
+                       RetrieveUpdateViewSet)
 from reviews.models import Category, Comment, Genre, Review, Title
 
 User = get_user_model()
@@ -52,7 +50,19 @@ class TitlesViewSet(viewsets.ModelViewSet):
         IsSafeMethods | (IsAuthenticated & IsAdminOrSuperuser),
     )
     filter_backends = (DjangoFilterBackend,)
-    filterset_fields = ('name', 'year', 'genre', 'category',)
+    filterset_fields = ('name', 'year',)
+
+    def get_queryset(self):
+        queryset = Title.objects.all()
+        genre = self.request.query_params.get('genre')
+        category = self.request.query_params.get('category')
+        if genre is not None:
+            genres = get_object_or_404(Genre, slug=genre)
+            queryset = genres.titles.all()
+        if category is not None:
+            categories = get_object_or_404(Category, slug=category)
+            queryset = categories.titles.all()
+        return queryset
 
     def perform_create(self, serializer):
         list_genre = []
@@ -73,7 +83,9 @@ class TitlesViewSet(viewsets.ModelViewSet):
 class ReviewsViewSet(viewsets.ModelViewSet):
     queryset = Review.objects.all()
     serializer_class = ReviewsSerializer
-    permission_classes = (IsSafeMethods | (IsAuthenticated & (IsAuthorOrReadOnly | IsAdminOrSuperuser | IsModerator)),)
+    permission_classes = (
+        IsSafeMethods | (IsAuthenticated & (
+            IsAuthor | IsAdminOrSuperuser | IsModerator)),)
 
     def perform_create(self, serializer):
         if Review.objects.filter(
@@ -91,7 +103,8 @@ class ReviewsViewSet(viewsets.ModelViewSet):
 class CommentsViewSet(viewsets.ModelViewSet):
     queryset = Comment.objects.all()
     serializer_class = CommentsSerializer
-    permission_classes = (IsSafeMethods | (IsUser | IsAdminOrSuperuser | IsModerator),)
+    permission_classes = (IsSafeMethods | (
+        IsUser | IsAdminOrSuperuser | IsModerator),)
 
     def request_reviews(self):
         return get_object_or_404(
