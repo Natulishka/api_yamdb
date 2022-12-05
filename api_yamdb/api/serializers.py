@@ -78,6 +78,7 @@ class TitlesSerializer(serializers.ModelSerializer):
     class Meta:
         model = Titles
         fields = (
+            'id',
             'name',
             'year',
             'description',
@@ -95,7 +96,7 @@ class TitlesSerializer(serializers.ModelSerializer):
 
             return sum(obj_score) // len(obj_score)
         except Exception:
-            return 0
+            return None
 
     def validate_year(self, value):
         if len(str(value)) != 4:
@@ -114,16 +115,8 @@ class ReviewsSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Reviews
-        fields = ('titles', 'text', 'author', 'score', 'pub_date',)
-
-    def validate_titles(self, value):
-        if Reviews.objects.filter(
-            titles=value,
-            author=self._kwargs['data'].get('author')
-        ).exists():
-            raise serializers.ValidationError('Вы уже оставляли отзыв')
-
-        return value
+        fields = '__all__'
+        read_only_fields = ('titles',)
 
 
 class CommentsSerializer(serializers.ModelSerializer):
@@ -133,7 +126,7 @@ class CommentsSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Comments
-        fields = ('reviews', 'text', 'author', 'pub_date')
+        fields = '__all__'
         read_only_fields = ('reviews',)
 
 

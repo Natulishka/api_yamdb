@@ -6,6 +6,7 @@ from rest_framework import filters, status, viewsets
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import AccessToken
+from rest_framework import serializers
 
 from .permissions import (IsAdminOrSuperuser,
                           IsAnyRole, IsModerator,
@@ -56,8 +57,9 @@ class TitlesViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         list_genre = []
 
-        for obj_genre in self.request.data['genre']:
+        for obj_genre in self.request.data.getlist('genre'):
             list_genre.append(get_object_or_404(Genres, slug=obj_genre))
+
         serializer.save(
             genre=list_genre,
             category=get_object_or_404(
@@ -71,9 +73,15 @@ class TitlesViewSet(viewsets.ModelViewSet):
 class ReviewsViewSet(viewsets.ModelViewSet):
     queryset = Reviews.objects.all()
     serializer_class = ReviewsSerializer
-    permission_classes = (IsSafeMethods, IsUser, IsAdminOrSuperuser,)
+    permission_classes = (IsSafeMethods | (IsUser | IsAdminOrSuperuser | IsModerator),)
 
     def perform_create(self, serializer):
+        if Reviews.objects.filter(
+            titles=get_object_or_404(Titles, pk=self.kwargs.get('title_id')),
+            author=self.request.user
+        ).exists():
+            raise serializers.ValidationError('Вы уже оставляли отзыв')
+
         serializer.save(
             author=self.request.user,
             titles=get_object_or_404(Titles, pk=self.kwargs.get('title_id'))
@@ -83,7 +91,7 @@ class ReviewsViewSet(viewsets.ModelViewSet):
 class CommentsViewSet(viewsets.ModelViewSet):
     queryset = Comments.objects.all()
     serializer_class = CommentsSerializer
-    permission_classes = (IsSafeMethods, IsUser, IsAdminOrSuperuser,)
+    permission_classes = (IsSafeMethods | (IsUser | IsAdminOrSuperuser | IsModerator),)
 
     def request_reviews(self):
         return get_object_or_404(
