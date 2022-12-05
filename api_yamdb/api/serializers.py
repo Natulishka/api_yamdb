@@ -3,7 +3,7 @@ from datetime import datetime
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
-from reviews.models import Categories, Comments, Genres, Reviews, Titles
+from reviews.models import Category, Comment, Genre, Review, Title
 from users.models import ROLE_CHOICES
 
 User = get_user_model()
@@ -46,26 +46,26 @@ class SignupSerializer(serializers.ModelSerializer):
 
 class GenreSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Genres
+        model = Genre
         fields = ('name', 'slug',)
 
 
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
-        model = Categories
+        model = Category
         fields = ('name', 'slug',)
 
 
 class CategoriesSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Categories
+        model = Category
         fields = ('name', 'slug',)
         lookup_field = 'slug'
 
 
 class GenresSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Genres
+        model = Genre
         fields = ('name', 'slug',)
         lookup_field = 'slug'
 
@@ -76,8 +76,9 @@ class TitlesSerializer(serializers.ModelSerializer):
     category = CategorySerializer(read_only=True)
 
     class Meta:
-        model = Titles
+        model = Title
         fields = (
+            'id',
             'name',
             'year',
             'description',
@@ -90,12 +91,12 @@ class TitlesSerializer(serializers.ModelSerializer):
         try:
             obj_score = []
 
-            for obj_model in Reviews.objects.filter(titles=obj.id):
+            for obj_model in Review.objects.filter(titles=obj.id):
                 obj_score.append(obj_model.score)
 
             return sum(obj_score) // len(obj_score)
         except Exception:
-            return 0
+            return None
 
     def validate_year(self, value):
         if len(str(value)) != 4:
@@ -113,17 +114,9 @@ class ReviewsSerializer(serializers.ModelSerializer):
     )
 
     class Meta:
-        model = Reviews
-        fields = ('titles', 'text', 'author', 'score', 'pub_date',)
-
-    def validate_titles(self, value):
-        if Reviews.objects.filter(
-            titles=value,
-            author=self._kwargs['data'].get('author')
-        ).exists():
-            raise serializers.ValidationError('Вы уже оставляли отзыв')
-
-        return value
+        model = Review
+        fields = '__all__'
+        read_only_fields = ('title',)
 
 
 class CommentsSerializer(serializers.ModelSerializer):
@@ -132,8 +125,8 @@ class CommentsSerializer(serializers.ModelSerializer):
     )
 
     class Meta:
-        model = Comments
-        fields = ('reviews', 'text', 'author', 'pub_date')
+        model = Comment
+        fields = '__all__'
         read_only_fields = ('reviews',)
 
 
