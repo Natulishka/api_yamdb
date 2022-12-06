@@ -10,7 +10,7 @@ from rest_framework import serializers
 
 from .permissions import (IsAdminOrSuperuser,
                           IsAnyRole, IsModerator,
-                          IsUser, IsSafeMethods, IsAuthorOrReadOnly)
+                          IsUser, IsSafeMethods, IsAuthor)
 from .serializers import (CategoriesSerializer, CommentsSerializer,
                           GenresSerializer, MeUserSerializer,
                           ReviewsSerializer, SignupSerializer,
@@ -73,18 +73,24 @@ class TitlesViewSet(viewsets.ModelViewSet):
 class ReviewsViewSet(viewsets.ModelViewSet):
     queryset = Review.objects.all()
     serializer_class = ReviewsSerializer
-    permission_classes = (IsSafeMethods | (IsAuthenticated & (IsAuthorOrReadOnly | IsAdminOrSuperuser | IsModerator)),)
+    permission_classes = (IsSafeMethods | (IsAuthenticated & (IsAuthor | IsAdminOrSuperuser | IsModerator)),)
+
+    def request_title(self):
+        return get_object_or_404(Title, pk=self.kwargs.get('title_id'))
+
+    def get_queryset(self):
+        return Review.objects.filter(title=self.request_title())
 
     def perform_create(self, serializer):
         if Review.objects.filter(
-            title=get_object_or_404(Title, pk=self.kwargs.get('title_id')),
+            title=self.request_title(),
             author=self.request.user
         ).exists():
             raise serializers.ValidationError('Вы уже оставляли отзыв')
 
         serializer.save(
             author=self.request.user,
-            title=get_object_or_404(Title, pk=self.kwargs.get('title_id'))
+            title=self.request_title()
         )
 
 

@@ -91,7 +91,7 @@ class TitlesSerializer(serializers.ModelSerializer):
         try:
             obj_score = []
 
-            for obj_model in Review.objects.filter(titles=obj.id):
+            for obj_model in Review.objects.filter(title=obj.id):
                 obj_score.append(obj_model.score)
 
             return sum(obj_score) // len(obj_score)

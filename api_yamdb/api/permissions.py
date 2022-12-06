@@ -1,7 +1,7 @@
 from rest_framework import permissions
 
 
-class IsAuthorOrReadOnly(permissions.BasePermission):
+class IsAuthor(permissions.BasePermission):
     '''
     Разрешение, что только автор может изменять и удалять контент
     '''
@@ -74,5 +74,16 @@ class IsSafeMethods(permissions.BasePermission):
 
     def has_permission(self, request, view):
         if request.method in permissions.SAFE_METHODS:
+            return True
+        return False
+
+
+class IsPostMethod(permissions.BasePermission):
+    '''
+    Разрешение метода post
+    '''
+
+    def has_permission(self, request, view):
+        if request.method == 'POST':
             return True
         return False
