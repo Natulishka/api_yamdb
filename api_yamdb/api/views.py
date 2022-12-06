@@ -1,5 +1,6 @@
 from django.contrib.auth import get_user_model
 from django.contrib.auth.tokens import default_token_generator
+from django.db.models import Avg
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters, serializers, status, viewsets
@@ -7,12 +8,14 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import AccessToken
 
-from .permissions import (IsAdminOrSuperuser, IsAuthor, IsModerator,
-                          IsSafeMethods, IsUser)
+from .filtres import TitlesFilter
+from .permissions import (IsAdminOrSuperuser, IsAuthor, IsNotUser,
+                          IsPostMethod, IsSafeMethods)
 from .serializers import (CategoriesSerializer, CommentsSerializer,
                           GenresSerializer, MeUserSerializer,
                           ReviewsSerializer, SignupSerializer,
-                          TitlesSerializer, TokenSerializer, UserSerializer)
+                          TitlesReadSerializer, TitlesWriteSerializer,
+                          TokenSerializer, UserSerializer)
 from .utils import email_confirmation_code
 from .viewsets import (CreateListDeleteViewSet, CreateViewSet,
                        RetrieveUpdateViewSet)
@@ -24,72 +27,52 @@ User = get_user_model()
 class CategoriesViewSet(CreateListDeleteViewSet):
     queryset = Category.objects.all()
     serializer_class = CategoriesSerializer
-    permission_classes = (
-        IsSafeMethods | (IsAuthenticated & IsAdminOrSuperuser),
-    )
+    permission_classes = (IsSafeMethods | IsAdminOrSuperuser,)
     filter_backends = (filters.SearchFilter,)
     search_fields = ('name',)
     lookup_field = 'slug'
+    ordering = ('name',)
 
 
 class GenresViewSet(CreateListDeleteViewSet):
     queryset = Genre.objects.all()
     serializer_class = GenresSerializer
-    permission_classes = (
-        IsSafeMethods | (IsAuthenticated & IsAdminOrSuperuser),
-    )
+    permission_classes = (IsSafeMethods | IsAdminOrSuperuser,)
     filter_backends = (filters.SearchFilter,)
     search_fields = ('name',)
     lookup_field = 'slug'
+    ordering = ('name',)
 
 
 class TitlesViewSet(viewsets.ModelViewSet):
-    queryset = Title.objects.all()
-    serializer_class = TitlesSerializer
-    permission_classes = (
-        IsSafeMethods | (IsAuthenticated & IsAdminOrSuperuser),
-    )
+    queryset = Title.objects.annotate(rating=Avg('reviews__score'))
+    permission_classes = (IsSafeMethods | IsAdminOrSuperuser,)
     filter_backends = (DjangoFilterBackend,)
-    filterset_fields = ('name', 'year',)
+    filterset_class = (TitlesFilter)
+    ordering = ('name',)
 
-    def get_queryset(self):
-        queryset = Title.objects.all()
-        genre = self.request.query_params.get('genre')
-        category = self.request.query_params.get('category')
-        if genre is not None:
-            genres = get_object_or_404(Genre, slug=genre)
-            queryset = genres.titles.all()
-        if category is not None:
-            categories = get_object_or_404(Category, slug=category)
-            queryset = categories.titles.all()
-        return queryset
-
-    def perform_create(self, serializer):
-        list_genre = []
-
-        for obj_genre in self.request.data.getlist('genre'):
-            list_genre.append(get_object_or_404(Genre, slug=obj_genre))
-
-        serializer.save(
-            genre=list_genre,
-            category=get_object_or_404(
-                Category, slug=self.request.data['category']
-            )
-        )
-
-    perform_update = perform_create
+    def get_serializer_class(self):
+        if self.action in ('list', 'retrieve'):
+            return TitlesReadSerializer
+        return TitlesWriteSerializer
 
 
 class ReviewsViewSet(viewsets.ModelViewSet):
     queryset = Review.objects.all()
     serializer_class = ReviewsSerializer
-    permission_classes = (
-        IsSafeMethods | (IsAuthenticated & (
-            IsAuthor | IsAdminOrSuperuser | IsModerator)),)
+    permission_classes = (IsSafeMethods | IsNotUser | IsAuthor | IsPostMethod,)
+    ordering = ('-id',)
+
+    def request_title(self):
+        return get_object_or_404(
+            Title, id=self.kwargs.get('title_id'))
+
+    def get_queryset(self):
+        return self.request_title().reviews.all()
 
     def perform_create(self, serializer):
         if Review.objects.filter(
-            title=get_object_or_404(Title, pk=self.kwargs.get('title_id')),
+            title=self.request_title(),
             author=self.request.user
         ).exists():
             raise serializers.ValidationError('Вы уже оставляли отзыв')
@@ -103,8 +86,8 @@ class ReviewsViewSet(viewsets.ModelViewSet):
 class CommentsViewSet(viewsets.ModelViewSet):
     queryset = Comment.objects.all()
     serializer_class = CommentsSerializer
-    permission_classes = (IsSafeMethods | (
-        IsUser | IsAdminOrSuperuser | IsModerator),)
+    permission_classes = (IsSafeMethods | IsAuthor | IsNotUser | IsPostMethod,)
+    ordering = ('-id',)
 
     def request_reviews(self):
         return get_object_or_404(
@@ -114,7 +97,7 @@ class CommentsViewSet(viewsets.ModelViewSet):
         )
 
     def get_queryset(self):
-        return self.request_reviews().comments
+        return self.request_reviews().comments.all()
 
     def perform_create(self, serializer):
         serializer.save(
@@ -178,7 +161,8 @@ class UserViewSet(viewsets.ModelViewSet):
     serializer_class = UserSerializer
     lookup_field = 'username'
     search_fields = ('name',)
-    permission_classes = (IsAuthenticated, IsAdminOrSuperuser)
+    permission_classes = (IsAdminOrSuperuser, )
+    ordering = ('username',)
 
 
 class MeUserViewSet(RetrieveUpdateViewSet):

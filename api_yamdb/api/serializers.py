@@ -3,7 +3,7 @@ from datetime import datetime
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
-from reviews.models import Category, Comment, Genre, Review, Title
+from reviews.models import Category, Comment, Genre, GenreTitle, Review, Title
 from users.models import ROLE_CHOICES
 
 User = get_user_model()
@@ -31,8 +31,6 @@ class MeUserSerializer(serializers.ModelSerializer):
 
 class SignupSerializer(serializers.ModelSerializer):
 
-    # username = serializers.RegexField(regex=r'^[\w.@+-]+$')
-
     class Meta:
         fields = ('username', 'email')
         model = User
@@ -42,18 +40,6 @@ class SignupSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError('Нельзя использовать в качестве'
                                               ' username строку me!')
         return value
-
-
-class GenreSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Genre
-        fields = ('name', 'slug',)
-
-
-class CategorySerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Category
-        fields = ('name', 'slug',)
 
 
 class CategoriesSerializer(serializers.ModelSerializer):
@@ -70,42 +56,43 @@ class GenresSerializer(serializers.ModelSerializer):
         lookup_field = 'slug'
 
 
-class TitlesSerializer(serializers.ModelSerializer):
-    rating = serializers.SerializerMethodField()
-    genre = GenreSerializer(many=True, read_only=True)
-    category = CategorySerializer(read_only=True)
+class TitlesWriteSerializer(serializers.ModelSerializer):
+    # rating = serializers.SerializerMethodField()
+    genre = serializers.SlugRelatedField(many=True, slug_field='slug',
+                                         queryset=Genre.objects.all())
+    category = serializers.SlugRelatedField(slug_field='slug',
+                                            queryset=Category.objects.all())
 
     class Meta:
         model = Title
-        fields = (
-            'id',
-            'name',
-            'year',
-            'description',
-            'genre',
-            'category',
-            'rating',
-        )
+        fields = '__all__'
 
-    def get_rating(self, obj):
-        try:
-            obj_score = []
-
-            for obj_model in Review.objects.filter(titles=obj.id):
-                obj_score.append(obj_model.score)
-
-            return sum(obj_score) // len(obj_score)
-        except Exception:
-            return None
+    def create(self, validated_data):
+        genres = validated_data.pop('genre')
+        title = Title.objects.create(**validated_data)
+        for genre in genres:
+            GenreTitle.objects.create(
+                genre=genre, title=title)
+        return title
 
     def validate_year(self, value):
-        if len(str(value)) != 4:
-            raise serializers.ValidationError('Неверный формат года!')
+        # if len(str(value)) != 4:
+        #     raise serializers.ValidationError('Неверный формат года!')
 
         if not (datetime.today().year >= value):
             raise serializers.ValidationError('Неверно указан год!')
 
         return value
+
+
+class TitlesReadSerializer(serializers.ModelSerializer):
+    rating = serializers.IntegerField(read_only=True)
+    genre = GenresSerializer(many=True)
+    category = CategoriesSerializer()
+
+    class Meta:
+        model = Title
+        fields = '__all__'
 
 
 class ReviewsSerializer(serializers.ModelSerializer):
@@ -115,7 +102,7 @@ class ReviewsSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Review
-        fields = '__all__'
+        fields = ('id', 'text', 'author', 'score', "pub_date")
         read_only_fields = ('title',)
 
 
