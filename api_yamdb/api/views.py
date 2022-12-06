@@ -9,8 +9,9 @@ from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import AccessToken
 
 from .filtres import TitlesFilter
-from .permissions import (IsAdminOrSuperuser, IsAuthor, IsNotUser,
-                          IsPostMethod, IsSafeMethods)
+from .permissions import (IsAdminOrSuperuser,
+                          IsAdminOrSuperuserWithSafeMethods,
+                          ReviewsAndCommentsPermissions)
 from .serializers import (CategoriesSerializer, CommentsSerializer,
                           GenresSerializer, MeUserSerializer,
                           ReviewsSerializer, SignupSerializer,
@@ -27,7 +28,7 @@ User = get_user_model()
 class CategoriesViewSet(CreateListDeleteViewSet):
     queryset = Category.objects.all()
     serializer_class = CategoriesSerializer
-    permission_classes = (IsSafeMethods | IsAdminOrSuperuser,)
+    permission_classes = (IsAdminOrSuperuserWithSafeMethods,)
     filter_backends = (filters.SearchFilter,)
     search_fields = ('name',)
     lookup_field = 'slug'
@@ -37,7 +38,7 @@ class CategoriesViewSet(CreateListDeleteViewSet):
 class GenresViewSet(CreateListDeleteViewSet):
     queryset = Genre.objects.all()
     serializer_class = GenresSerializer
-    permission_classes = (IsSafeMethods | IsAdminOrSuperuser,)
+    permission_classes = (IsAdminOrSuperuserWithSafeMethods,)
     filter_backends = (filters.SearchFilter,)
     search_fields = ('name',)
     lookup_field = 'slug'
@@ -46,7 +47,7 @@ class GenresViewSet(CreateListDeleteViewSet):
 
 class TitlesViewSet(viewsets.ModelViewSet):
     queryset = Title.objects.annotate(rating=Avg('reviews__score'))
-    permission_classes = (IsSafeMethods | IsAdminOrSuperuser,)
+    permission_classes = (IsAdminOrSuperuserWithSafeMethods,)
     filter_backends = (DjangoFilterBackend,)
     filterset_class = (TitlesFilter)
     ordering = ('name',)
@@ -60,7 +61,7 @@ class TitlesViewSet(viewsets.ModelViewSet):
 class ReviewsViewSet(viewsets.ModelViewSet):
     queryset = Review.objects.all()
     serializer_class = ReviewsSerializer
-    permission_classes = (IsSafeMethods | IsNotUser | IsAuthor | IsPostMethod,)
+    permission_classes = (ReviewsAndCommentsPermissions,)
     ordering = ('-id',)
 
     def request_title(self):
@@ -76,7 +77,6 @@ class ReviewsViewSet(viewsets.ModelViewSet):
             author=self.request.user
         ).exists():
             raise serializers.ValidationError('Вы уже оставляли отзыв')
-
         serializer.save(
             author=self.request.user,
             title=get_object_or_404(Title, pk=self.kwargs.get('title_id'))
@@ -86,7 +86,7 @@ class ReviewsViewSet(viewsets.ModelViewSet):
 class CommentsViewSet(viewsets.ModelViewSet):
     queryset = Comment.objects.all()
     serializer_class = CommentsSerializer
-    permission_classes = (IsSafeMethods | IsAuthor | IsNotUser | IsPostMethod,)
+    permission_classes = (ReviewsAndCommentsPermissions,)
     ordering = ('-id',)
 
     def request_reviews(self):
