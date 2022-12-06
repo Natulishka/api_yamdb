@@ -25,6 +25,9 @@ class Title(models.Model):
         Category, on_delete=models.SET_NULL, null=True, related_name='titles'
     )
 
+    def __str__(self):
+        return self.name
+
 
 class GenreTitle(models.Model):
     genre = models.ForeignKey(Genre, on_delete=models.CASCADE)
