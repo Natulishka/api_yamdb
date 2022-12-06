@@ -3,7 +3,7 @@ from datetime import datetime
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
-from reviews.models import Category, Comment, Genre, GenreTitle, Review, Title
+from reviews.models import Category, Comment, Genre, Review, Title
 from users.models import ROLE_CHOICES
 
 User = get_user_model()
@@ -57,7 +57,6 @@ class GenresSerializer(serializers.ModelSerializer):
 
 
 class TitlesWriteSerializer(serializers.ModelSerializer):
-    # rating = serializers.SerializerMethodField()
     genre = serializers.SlugRelatedField(many=True, slug_field='slug',
                                          queryset=Genre.objects.all())
     category = serializers.SlugRelatedField(slug_field='slug',
@@ -67,21 +66,9 @@ class TitlesWriteSerializer(serializers.ModelSerializer):
         model = Title
         fields = '__all__'
 
-    def create(self, validated_data):
-        genres = validated_data.pop('genre')
-        title = Title.objects.create(**validated_data)
-        for genre in genres:
-            GenreTitle.objects.create(
-                genre=genre, title=title)
-        return title
-
     def validate_year(self, value):
-        # if len(str(value)) != 4:
-        #     raise serializers.ValidationError('Неверный формат года!')
-
         if not (datetime.today().year >= value):
             raise serializers.ValidationError('Неверно указан год!')
-
         return value
 
 
