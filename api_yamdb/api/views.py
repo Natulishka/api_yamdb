@@ -9,15 +9,14 @@ from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import AccessToken
 
 from .filtres import TitlesFilter
-from .permissions import (IsAdminOrSuperuser,
-                          IsAdminOrSuperuserWithSafeMethods,
-                          ReviewsAndCommentsPermissions)
+from .permissions import (IsAdminOrSuperuser, IsAdminOrSuperUserOrReadOnly,
+                          IsAuthorAdminModeratorOrReadOnly)
 from .serializers import (CategoriesSerializer, CommentsSerializer,
                           GenresSerializer, MeUserSerializer,
                           ReviewsSerializer, SignupSerializer,
                           TitlesReadSerializer, TitlesWriteSerializer,
                           TokenSerializer, UserSerializer)
-from .utils import email_confirmation_code
+from .utils import send_email_confirmation_code
 from .viewsets import (CreateListDeleteViewSet, CreateViewSet,
                        RetrieveUpdateViewSet)
 from reviews.models import Category, Comment, Genre, Review, Title
@@ -28,7 +27,7 @@ User = get_user_model()
 class CategoriesViewSet(CreateListDeleteViewSet):
     queryset = Category.objects.all()
     serializer_class = CategoriesSerializer
-    permission_classes = (IsAdminOrSuperuserWithSafeMethods,)
+    permission_classes = (IsAdminOrSuperUserOrReadOnly,)
     filter_backends = (filters.SearchFilter,)
     search_fields = ('name',)
     lookup_field = 'slug'
@@ -38,7 +37,7 @@ class CategoriesViewSet(CreateListDeleteViewSet):
 class GenresViewSet(CreateListDeleteViewSet):
     queryset = Genre.objects.all()
     serializer_class = GenresSerializer
-    permission_classes = (IsAdminOrSuperuserWithSafeMethods,)
+    permission_classes = (IsAdminOrSuperUserOrReadOnly,)
     filter_backends = (filters.SearchFilter,)
     search_fields = ('name',)
     lookup_field = 'slug'
@@ -47,7 +46,7 @@ class GenresViewSet(CreateListDeleteViewSet):
 
 class TitlesViewSet(viewsets.ModelViewSet):
     queryset = Title.objects.annotate(rating=Avg('reviews__score'))
-    permission_classes = (IsAdminOrSuperuserWithSafeMethods,)
+    permission_classes = (IsAdminOrSuperUserOrReadOnly,)
     filter_backends = (DjangoFilterBackend,)
     filterset_class = (TitlesFilter)
     ordering = ('name',)
@@ -61,7 +60,7 @@ class TitlesViewSet(viewsets.ModelViewSet):
 class ReviewsViewSet(viewsets.ModelViewSet):
     queryset = Review.objects.all()
     serializer_class = ReviewsSerializer
-    permission_classes = (ReviewsAndCommentsPermissions,)
+    permission_classes = (IsAuthorAdminModeratorOrReadOnly,)
     ordering = ('-id',)
 
     def request_title(self):
@@ -86,7 +85,7 @@ class ReviewsViewSet(viewsets.ModelViewSet):
 class CommentsViewSet(viewsets.ModelViewSet):
     queryset = Comment.objects.all()
     serializer_class = CommentsSerializer
-    permission_classes = (ReviewsAndCommentsPermissions,)
+    permission_classes = (IsAuthorAdminModeratorOrReadOnly,)
     ordering = ('-id',)
 
     def request_reviews(self):
@@ -126,7 +125,7 @@ class SignupViewSet(CreateViewSet):
         serializer = self.get_serializer(user, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         confirmation_code = default_token_generator.make_token(user)
-        email_confirmation_code(confirmation_code, username, email)
+        send_email_confirmation_code(confirmation_code, username, email)
         headers = self.get_success_headers(serializer.data)
         return Response(serializer.data,
                         status=status.HTTP_200_OK,
@@ -146,8 +145,8 @@ class TokenViewSet(CreateViewSet):
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        username = request.data['username']
-        confirmation_code = request.data['confirmation_code']
+        username = serializer.data['username']
+        confirmation_code = serializer.data['confirmation_code']
         user = get_object_or_404(User, username=username)
         if not default_token_generator.check_token(user, confirmation_code):
             return Response('Uncorrect value confirmation_code',

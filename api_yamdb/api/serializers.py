@@ -4,13 +4,13 @@ from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
 from reviews.models import Category, Comment, Genre, Review, Title
-from users.models import ROLE_CHOICES
+from users.models import User
 
 User = get_user_model()
 
 
 class UserSerializer(serializers.ModelSerializer):
-    role = serializers.ChoiceField(choices=ROLE_CHOICES, required=False)
+    role = serializers.ChoiceField(choices=User.ROLE_CHOICES, required=False)
 
     class Meta:
         fields = ('username', 'email', 'first_name',
