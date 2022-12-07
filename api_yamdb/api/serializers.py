@@ -2,20 +2,24 @@ from datetime import datetime
 
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
+from rest_framework.validators import UniqueValidator
 
 from reviews.models import Category, Comment, Genre, Review, Title
-from users.models import ROLE_CHOICES
+from users.models import User
 
 User = get_user_model()
 
 
 class UserSerializer(serializers.ModelSerializer):
-    role = serializers.ChoiceField(choices=ROLE_CHOICES, required=False)
+    role = serializers.ChoiceField(choices=User.ROLE_CHOICES, required=False)
 
     class Meta:
         fields = ('username', 'email', 'first_name',
                   'last_name', 'bio', 'role')
         model = User
+
+    def perform_create(self, serializer):
+        serializer.save(is_active=False)
 
 
 class MeUserSerializer(serializers.ModelSerializer):
@@ -30,6 +34,14 @@ class MeUserSerializer(serializers.ModelSerializer):
 
 
 class SignupSerializer(serializers.ModelSerializer):
+    email = serializers.EmailField(
+        required=True,
+        validators=[UniqueValidator(
+            queryset=User.objects.filter(is_active=True))])
+    username = serializers.CharField(
+        required=True,
+        validators=[UniqueValidator(
+            queryset=User.objects.filter(is_active=True))])
 
     class Meta:
         fields = ('username', 'email')
