@@ -4,22 +4,21 @@ from django.db.models import Avg
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters, serializers, status, viewsets
+from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import AccessToken
 
 from .filtres import TitlesFilter
-from .permissions import (IsAdminOrSuperuser,
-                          IsAdminOrSuperuserWithSafeMethods,
-                          ReviewsAndCommentsPermissions)
+from .permissions import (IsAdminOrSuperuser, IsAdminOrSuperUserOrReadOnly,
+                          IsAuthorAdminModeratorOrReadOnly)
 from .serializers import (CategoriesSerializer, CommentsSerializer,
                           GenresSerializer, MeUserSerializer,
                           ReviewsSerializer, SignupSerializer,
                           TitlesReadSerializer, TitlesWriteSerializer,
                           TokenSerializer, UserSerializer)
-from .utils import email_confirmation_code
-from .viewsets import (CreateListDeleteViewSet, CreateViewSet,
-                       RetrieveUpdateViewSet)
+from .utils import send_email_confirmation_code
+from .viewsets import CreateListDeleteViewSet, CreateViewSet
 from reviews.models import Category, Comment, Genre, Review, Title
 
 User = get_user_model()
@@ -28,7 +27,7 @@ User = get_user_model()
 class CategoriesViewSet(CreateListDeleteViewSet):
     queryset = Category.objects.all()
     serializer_class = CategoriesSerializer
-    permission_classes = (IsAdminOrSuperuserWithSafeMethods,)
+    permission_classes = (IsAdminOrSuperUserOrReadOnly,)
     filter_backends = (filters.SearchFilter,)
     search_fields = ('name',)
     lookup_field = 'slug'
@@ -38,7 +37,7 @@ class CategoriesViewSet(CreateListDeleteViewSet):
 class GenresViewSet(CreateListDeleteViewSet):
     queryset = Genre.objects.all()
     serializer_class = GenresSerializer
-    permission_classes = (IsAdminOrSuperuserWithSafeMethods,)
+    permission_classes = (IsAdminOrSuperUserOrReadOnly,)
     filter_backends = (filters.SearchFilter,)
     search_fields = ('name',)
     lookup_field = 'slug'
@@ -47,7 +46,7 @@ class GenresViewSet(CreateListDeleteViewSet):
 
 class TitlesViewSet(viewsets.ModelViewSet):
     queryset = Title.objects.annotate(rating=Avg('reviews__score'))
-    permission_classes = (IsAdminOrSuperuserWithSafeMethods,)
+    permission_classes = (IsAdminOrSuperUserOrReadOnly,)
     filter_backends = (DjangoFilterBackend,)
     filterset_class = (TitlesFilter)
     ordering = ('name',)
@@ -61,7 +60,7 @@ class TitlesViewSet(viewsets.ModelViewSet):
 class ReviewsViewSet(viewsets.ModelViewSet):
     queryset = Review.objects.all()
     serializer_class = ReviewsSerializer
-    permission_classes = (ReviewsAndCommentsPermissions,)
+    permission_classes = (IsAuthorAdminModeratorOrReadOnly,)
     ordering = ('-id',)
 
     def request_title(self):
@@ -86,7 +85,7 @@ class ReviewsViewSet(viewsets.ModelViewSet):
 class CommentsViewSet(viewsets.ModelViewSet):
     queryset = Comment.objects.all()
     serializer_class = CommentsSerializer
-    permission_classes = (ReviewsAndCommentsPermissions,)
+    permission_classes = (IsAuthorAdminModeratorOrReadOnly,)
     ordering = ('-id',)
 
     def request_reviews(self):
@@ -112,24 +111,17 @@ class SignupViewSet(CreateViewSet):
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
-        try:
-            username = request.data['username']
-            email = request.data['email']
-        except KeyError:
-            serializer.is_valid(raise_exception=True)
-        if not User.objects.filter(username=username,
-                                   email=email).exists():
-            serializer.is_valid(raise_exception=True)
-            serializer.save()
-            self.perform_create(serializer)
-        user = get_object_or_404(User, username=username)
-        serializer = self.get_serializer(user, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
+        username = serializer.data['username']
+        email = serializer.data['email']
+        user, created = User.objects.get_or_create(
+            username=username,
+            email=email)
         confirmation_code = default_token_generator.make_token(user)
-        email_confirmation_code(confirmation_code, username, email)
+        send_email_confirmation_code(confirmation_code, username, email)
+        user.is_active = True
         headers = self.get_success_headers(serializer.data)
-        return Response(serializer.data,
-                        status=status.HTTP_200_OK,
+        return Response(serializer.data, status=status.HTTP_200_OK,
                         headers=headers)
 
 
@@ -146,8 +138,8 @@ class TokenViewSet(CreateViewSet):
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        username = request.data['username']
-        confirmation_code = request.data['confirmation_code']
+        username = serializer.validated_data['username']
+        confirmation_code = serializer.validated_data['confirmation_code']
         user = get_object_or_404(User, username=username)
         if not default_token_generator.check_token(user, confirmation_code):
             return Response('Uncorrect value confirmation_code',
@@ -164,13 +156,22 @@ class UserViewSet(viewsets.ModelViewSet):
     permission_classes = (IsAdminOrSuperuser, )
     ordering = ('username',)
 
+    def get_serializer_class(self):
+        if self.action == 'me':
+            return MeUserSerializer
+        return UserSerializer
 
-class MeUserViewSet(RetrieveUpdateViewSet):
-    queryset = User.objects.all()
-    serializer_class = MeUserSerializer
-    permission_classes = (IsAuthenticated, )
-
-    def get_object(self):
-        obj = self.request.user
-        self.check_object_permissions(self.request, obj)
-        return obj
+    @action(detail=False, methods=['get', 'patch'],
+            permission_classes=[IsAuthenticated])
+    def me(self, request):
+        instance = request.user
+        if request.method == 'GET':
+            serializer = self.get_serializer(instance)
+            return Response(serializer.data)
+        serializer = self.get_serializer(instance, data=request.data,
+                                         partial=True)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+        if getattr(instance, '_prefetched_objects_cache', None):
+            instance._prefetched_objects_cache = {}
+        return Response(serializer.data)

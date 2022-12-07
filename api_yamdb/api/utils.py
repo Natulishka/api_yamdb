@@ -1,7 +1,8 @@
+from django.conf import settings
 from django.core.mail import send_mail
 
 
-def email_confirmation_code(confirmation_code, username, email):
+def send_email_confirmation_code(confirmation_code, username, email):
     '''
     Отправляет письмо с кодом подтверждения
     '''
@@ -9,6 +10,6 @@ def email_confirmation_code(confirmation_code, username, email):
     send_mail(
         'Confirmation code',
         body,
-        'from@example.com',
+        settings.EMAIL_HOST_USER,
         [email],
         fail_silently=False,)
