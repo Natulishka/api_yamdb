@@ -2,7 +2,7 @@ import csv
 
 from django.core.management.base import BaseCommand
 
-from reviews.models import Genre, Category, Comment, Title, GenreTitle, Review
+from reviews.models import Category, Comment, Genre, GenreTitle, Review, Title
 from users.models import User
 
 
@@ -10,6 +10,15 @@ class Command(BaseCommand):
     help = 'CSV uploads'
 
     def handle(self, *args, **options):
+        self.uploads_category()
+        self.uploads_genre()
+        self.uploads_users()
+        self.uploads_titles()
+        self.uploads_genre_title()
+        self.uploads_review()
+        self.uploads_comments()
+
+    def uploads_category(self):
         try:
             with open(
                 'static/data/category.csv',
@@ -28,6 +37,7 @@ class Command(BaseCommand):
                 'Такие данные в таблице "Category" уже существуют'
             ))
 
+    def uploads_genre(self):
         try:
             with open(
                 'static/data/genre.csv',
@@ -46,6 +56,7 @@ class Command(BaseCommand):
                 'Такие данные в таблице "Genre" уже существуют'
             ))
 
+    def uploads_users(self):
         try:
             with open(
                 'static/data/users.csv',
@@ -67,6 +78,7 @@ class Command(BaseCommand):
                 'Такие данные в таблице "User" уже существуют'
             ))
 
+    def uploads_titles(self):
         try:
             with open(
                 'static/data/titles.csv',
@@ -86,6 +98,7 @@ class Command(BaseCommand):
                 'Такие данные в таблице "Title" уже существуют'
             ))
 
+    def uploads_genre_title(self):
         try:
             with open(
                 'static/data/genre_title.csv',
@@ -104,6 +117,7 @@ class Command(BaseCommand):
                 'Такие данные в таблице "GenreTitle" уже существуют'
             ))
 
+    def uploads_review(self):
         try:
             with open(
                 'static/data/review.csv',
@@ -124,6 +138,7 @@ class Command(BaseCommand):
                 'Такие данные в таблице "Review" уже существуют'
             ))
 
+    def uploads_comments(self):
         try:
             with open(
                 'static/data/comments.csv',
