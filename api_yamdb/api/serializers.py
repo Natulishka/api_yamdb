@@ -1,6 +1,7 @@
 from datetime import datetime
 
 from django.contrib.auth import get_user_model
+from django.shortcuts import get_object_or_404
 from rest_framework import serializers
 
 from reviews.models import Category, Comment, Genre, Review, Title
@@ -84,13 +85,30 @@ class TitlesReadSerializer(serializers.ModelSerializer):
 
 class ReviewsSerializer(serializers.ModelSerializer):
     author = serializers.SlugRelatedField(
-        read_only=True, slug_field='username'
+        read_only=True,
+        slug_field='username',
+        default=serializers.CurrentUserDefault()
     )
+    title = serializers.PrimaryKeyRelatedField(read_only=True)
 
     class Meta:
         model = Review
-        fields = ('id', 'text', 'author', 'score', "pub_date")
-        read_only_fields = ('title',)
+        fields = '__all__'
+
+    def validate(self, data):
+        request = self.context.get('request')
+        title = get_object_or_404(
+            Title,
+            pk=self.context.get('view').kwargs.get('title_id')
+        )
+
+        if (request.method not in 'PATCH' and Review.objects.filter(
+            title=title,
+            author=request.user
+        ).exists()):
+            raise serializers.ValidationError('Вы уже оставляли отзыв')
+
+        return data
 
 
 class CommentsSerializer(serializers.ModelSerializer):
