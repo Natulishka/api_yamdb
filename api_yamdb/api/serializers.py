@@ -1,8 +1,9 @@
 from datetime import datetime
 
 from django.contrib.auth import get_user_model
+from django.shortcuts import get_object_or_404
 from rest_framework import serializers
-from rest_framework.validators import UniqueValidator, UniqueTogetherValidator
+from rest_framework.validators import UniqueValidator
 
 from reviews.models import Category, Comment, Genre, Review, Title
 from users.models import User
@@ -105,14 +106,22 @@ class ReviewsSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Review
-        fields = ('id', 'text', 'pub_date', 'title', 'author', 'score',)
-        validators = [
-            UniqueTogetherValidator(
-                queryset=Review.objects.all(),
-                fields=('author', 'title'),
-                message=('Вы уже оставляли отзыв')
-            )
-        ]
+        fields = '__all__'
+
+    def validate(self, data):
+        request = self.context.get('request')
+        title = get_object_or_404(
+            Title,
+            pk=self.context.get('view').kwargs.get('title_id')
+        )
+
+        if (request.method not in 'PATCH' and Review.objects.filter(
+            title=title,
+            author=request.user
+        ).exists()):
+            raise serializers.ValidationError('Вы уже оставляли отзыв')
+
+        return data
 
 
 class CommentsSerializer(serializers.ModelSerializer):
