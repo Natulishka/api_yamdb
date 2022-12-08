@@ -3,7 +3,7 @@ from django.contrib.auth.tokens import default_token_generator
 from django.db.models import Avg
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import filters, serializers, status, viewsets
+from rest_framework import filters, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -71,11 +71,6 @@ class ReviewsViewSet(viewsets.ModelViewSet):
         return self.request_title().reviews.all()
 
     def perform_create(self, serializer):
-        if Review.objects.filter(
-            title=self.request_title(),
-            author=self.request.user
-        ).exists():
-            raise serializers.ValidationError('Вы уже оставляли отзыв')
         serializer.save(
             author=self.request.user,
             title=get_object_or_404(Title, pk=self.kwargs.get('title_id'))
@@ -119,7 +114,6 @@ class SignupViewSet(CreateViewSet):
             email=email)
         confirmation_code = default_token_generator.make_token(user)
         send_email_confirmation_code(confirmation_code, username, email)
-        user.is_active = True
         headers = self.get_success_headers(serializer.data)
         return Response(serializer.data, status=status.HTTP_200_OK,
                         headers=headers)
