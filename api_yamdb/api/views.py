@@ -119,7 +119,6 @@ class SignupViewSet(CreateViewSet):
             email=email)
         confirmation_code = default_token_generator.make_token(user)
         send_email_confirmation_code(confirmation_code, username, email)
-        user.is_active = True
         headers = self.get_success_headers(serializer.data)
         return Response(serializer.data, status=status.HTTP_200_OK,
                         headers=headers)
