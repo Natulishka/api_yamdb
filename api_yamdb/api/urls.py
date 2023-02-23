@@ -29,8 +29,6 @@ api_v1_router.register(
 
 
 urlpatterns = [
-    # path('v1/users/me/', MeUserViewSet.as_view({'get': 'retrieve',
-    #                                             'patch': 'update'})),
     path('v1/auth/signup/', SignupViewSet.as_view({'post': 'create'})),
     path('v1/auth/token/', TokenViewSet.as_view({'post': 'create'}),
          name='token_obtain_pair'),
