@@ -37,6 +37,6 @@ python manage.py runserver
 
 Документацию и примеры запросов можно посмотреть по адресу http://127.0.0.1:8000/redoc/
 
-###Авторы###
-[Наталья Шульгина](https://github.com/Natulishka/)
-[Павел Иванов]()
+### Авторы  
+[Наталья Шульгина](https://github.com/Natulishka/)  
+[Павел Иванов](https://github.com/Chasotcka)
